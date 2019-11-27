@@ -12,20 +12,12 @@
 </head>
 <body>
   <canvas id="video-canvas"></canvas>
-  <BR><button id="resumebutton">audio on</button>  
 	<script type="text/javascript" src="jsmpeg.min.js"></script>
 	<script type="text/javascript">
 		var canvas = document.getElementById('video-canvas');
 		var url = 'ws://'+document.location.hostname+':8082/';
-	  var player = new JSMpeg.Player(url, {canvas: canvas, });
+	  var player = new JSMpeg.Player(url, {canvas: canvas });
       console.log("player:",player);
-
-      document.getElementById('resumebutton').addEventListener('click', function() {
-  context.resume().then(() => {
-    console.log('Playback resumed successfully');
-  });
-});
-
 	</script>
 
 </body>
