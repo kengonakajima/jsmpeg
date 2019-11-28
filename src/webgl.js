@@ -32,7 +32,7 @@ var WebGLRenderer = function(options) {
 
 	// Init buffers
 	this.vertexBuffer = gl.createBuffer();
-	var vertexCoords = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]);
+    var vertexCoords = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]);
 	gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, vertexCoords, gl.STATIC_DRAW);
 
@@ -256,7 +256,8 @@ WebGLRenderer.SHADER = {
 		'varying vec2 texCoord;',
 
 		'void main() {',
-			'texCoord = vertex;',
+   //		'texCoord = vertex;',
+			'texCoord = vec2(vertex.x,1.0-vertex.y);',        // Y flipping 
 			'gl_Position = vec4((vertex * 2.0 - 1.0) * vec2(1, -1), 0.0, 1.0);',
 		'}'
 	].join('\n')
