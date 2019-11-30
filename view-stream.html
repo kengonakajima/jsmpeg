@@ -12,6 +12,7 @@
 </head>
 <body>
   <canvas id="video-canvas"></canvas>
+  <button id="debugbtn" onclick="debugPressed();">debug</button>
   <script type="text/javascript" src="hoge.js"></script>
 	<script type="text/javascript" src="audioplayer.js"></script>  
 	<script type="text/javascript">
@@ -21,6 +22,6 @@
       console.log("mpegplayer:",mpegplayer);
       startAudioPlayer("ws://"+document.location.hostname+':8084/');
 	</script>
-
+    
 </body>
 </html>
