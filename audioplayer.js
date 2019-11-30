@@ -47,7 +47,7 @@ function parseRecvbuf() {
         return;
     }
     var samplenum = payload_len/2/2;
-    console.log("AudioDataReceiver write payload_len:",payload_len, "funcid:",funcid, "n:",samplenum);
+//    console.log("AudioDataReceiver write payload_len:",payload_len, "funcid:",funcid, "n:",samplenum);
     var room = g_samples_r.length - g_samples_used;
     if( samplenum > room ) {
         console.log("audiodatareceiver.write: room not enough");
@@ -73,7 +73,7 @@ function parseRecvbuf() {
         
     g_samples_used+=samplenum;
     g_samples_debug_used+=samplenum;
-    console.log("audiodatareceiver.write: append",samplenum,"total:",g_samples_used, g_samples_debug_used);
+//    console.log("audiodatareceiver.write: append",samplenum,"total:",g_samples_used, g_samples_debug_used);
 
     shiftRecvbuf(6+payload_len);
 }
