@@ -125,6 +125,10 @@ g_sn.onaudioprocess = function(audioProcessingEvent) {
             out1[i] = g_samples_l[i];
         }
         shiftSamples(inputBuffer.length);
+        if(g_samples_used > 2048) {
+            console.log("buffering too much?");
+            shiftSamples(512);
+        }
     } else {
         for (var i = 0; i < inputBuffer.length; i++) {
             out0[i] = Math.random()*0.1;
