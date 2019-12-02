@@ -21,6 +21,25 @@
 	  var mpegplayer = new JSMpeg.Player(url, {canvas: canvas });
       console.log("mpegplayer:",mpegplayer);
       startAudioPlayer("ws://"+document.location.hostname+':8084/');
+
+      document.addEventListener( "keydown", function(e) {
+          notifyEventAudioPlayer(e);         
+      });
+      document.addEventListener( "keyup", function(e) {
+          notifyEventAudioPlayer(e);         
+      });
+      canvas.addEventListener( "click", function(e) {
+          notifyEventAudioPlayer(e);          
+      });
+      canvas.addEventListener( "mousemove", function(e) {
+          notifyEventAudioPlayer(e);          
+      });
+      canvas.addEventListener( "mouseup", function(e) {
+          notifyEventAudioPlayer(e);          
+      });
+      canvas.addEventListener( "mousedown", function(e) {
+          notifyEventAudioPlayer(e);
+      });
 	</script>
     
 </body>

@@ -1,5 +1,10 @@
 // receiving samples from ws
 
+var FUNCID_PCM_SAMPLES = 10;
+var FUNCID_KEY_EVENT = 20;
+var FUNCID_CLICK_EVENT = 21;
+var FUNCID_MOUSEMOVE_EVENT = 22;
+
 var g_samples_r=new Float32Array(48000);
 var g_samples_l=new Float32Array(48000);
 
@@ -48,7 +53,7 @@ function parseRecvbuf() {
         console.log("parseRecvbuf: need more data");
         return;
     }
-    if(funcid==10) {
+    if(funcid==FUNCID_PCM_SAMPLES) {
         // receiving raw pcm16le monoral data
         var input_samplenum = payload_len/2;
         var output_samplenum = input_samplenum * 2; // 24k to 48k
@@ -87,12 +92,22 @@ class AudioReceiver {
 var g_audioreceiver = new AudioReceiver();
 
 
+var g_ws;
 function startAudioPlayer(url) {
-    var ws = new JSMpeg.Source.WebSocket(url,{});
-    ws.connect(g_audioreceiver);
-    ws.start();
+    g_ws = new JSMpeg.Source.WebSocket(url,{});
+    g_ws.connect(g_audioreceiver);
+    g_ws.start();
 }
-
+function sendRPCInt(funcid,iargs) {
+    var payload_len = 4*iargs.length;
+    var ab=new ArrayBuffer(4+2+payload_len);
+    var dv=new DataView(ab);
+    dv.setInt32(0,payload_len,true);
+    dv.setInt16(4,funcid,true);
+    for(var i=0;i<iargs.length;i++) dv.setInt32(6+i*4,iargs[i],true);
+    console.log("sendRPCInt:", ab,g_ws);
+    g_ws.socket.send(ab);
+}
 
 // playing samples
 
@@ -130,11 +145,11 @@ g_sn.connect(g_ctx.destination);
 
 document.onclick = function() {
     try {
-    g_src.start(0);        
+        g_src.start(0);
     }catch(e) {
     }
 
-    console.log("clkcd");
+
 }
 
 function debugPressed() {
@@ -150,4 +165,26 @@ function debugPressed() {
     s.buffer=b;
     s.connect(g_ctx.destination);
     s.start();
+}
+
+/////////////
+
+// input events
+function notifyEventAudioPlayer(e) {
+    if(e.type=="click") {
+        console.log("click:", e.offsetX,e.offsetY,e);
+        sendRPCInt(FUNCID_CLICK_EVENT, [e.offsetX, e.offsetY] );
+    } else if(e.type=="keydown") {
+        console.log("kd",e.key);
+    } else if(e.type=="keyup") {
+        console.log("ku",e.key);
+    } else if(e.type=="mousemove") {
+        console.log("mousemove",e);
+    } else if(e.type=="mouseup") {
+        console.log("mouseup",e);
+    } else if(e.type=="mousedown") {
+        console.log("mousedown",e);                
+    } else {
+        console.log("other",e);        
+    }
 }
