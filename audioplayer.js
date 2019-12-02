@@ -19,6 +19,8 @@ function shiftSamples(n) {
 var g_recvbuf=new ArrayBuffer(1024*512);
 var g_recvbuf_used=0;
 
+
+
 function appendRecvbuf(ab) {
     var u8a = new Uint8Array(ab);
     if(g_recvbuf_used+u8a.byteLength > g_recvbuf.byteLength) {
@@ -41,40 +43,35 @@ function parseRecvbuf() {
     if(g_recvbuf_used<6) return;
     var payload_len = g_recvbuf[0] + (g_recvbuf[1]*256) + (g_recvbuf[2]*256*256); // ignore [3]
     var funcid = g_recvbuf[4]+(g_recvbuf[5]*256);
-//    console.log("XXX:",payload_len,funcid,g_recvbuf);
+
     if(g_recvbuf_used<6+payload_len) {
         console.log("parseRecvbuf: need more data");
         return;
     }
-    var samplenum = payload_len/2/2;
-//    console.log("AudioDataReceiver write payload_len:",payload_len, "funcid:",funcid, "n:",samplenum);
-    var room = g_samples_r.length - g_samples_used;
-    if( samplenum > room ) {
-        console.log("audiodatareceiver.write: room not enough");
-        g_samples_used=0;
+    if(funcid==10) {
+        // receiving raw pcm16le monoral data
+        var input_samplenum = payload_len/2;
+        var output_samplenum = input_samplenum * 2; // 24k to 48k
+        var room = g_samples_r.length - g_samples_used;
+        if( output_samplenum > room ) {
+            console.log("audiodatareceiver.write: room not enough");
+            g_samples_used=0;
+        }
+        for(var i=0;i<input_samplenum;i++) {
+            var ind=6+i*2;
+            var u16 = (g_recvbuf[ind] + (g_recvbuf[ind+1]*256));
+            var i16= u16>32767 ? -(65536-u16) : u16;
+            var mono= i16/32768;
+            g_samples_r[g_samples_used+i*2] = mono;
+            g_samples_l[g_samples_used+i*2] = mono;
+            g_samples_r[g_samples_used+i*2+1] = mono;
+            g_samples_l[g_samples_used+i*2+1] = mono;            
+            g_samples_debug[g_samples_debug_used+i*2] = mono;
+            g_samples_debug[g_samples_debug_used+i*2+1] = mono;
+        }
+        g_samples_used+=output_samplenum;
+        g_samples_debug_used+=output_samplenum;
     }
-    var cnt0=0;
-    
-    for(var i=0;i<samplenum;i++) {
-        var ind=6+i*4;
-        var ru16 = (g_recvbuf[ind] + (g_recvbuf[ind+1]*256));
-        var lu16 = (g_recvbuf[ind+2] + (g_recvbuf[ind+3]*256));
-        if(ru16==0)cnt0++;
-        var ri16= ru16>32767 ?  -(65536-ru16) : ru16;
-        var li16= lu16>32767 ?  -(65536-lu16) : lu16;
-        var r= ri16/32768;
-        var l= li16/32768;
-//        if(i<3) console.log("LR:",r,l,"U:",ru16,lu16,"b:",g_recvbuf[ind],g_recvbuf[ind+1]);
-        g_samples_r[g_samples_used+i] = r;
-        g_samples_l[g_samples_used+i] = l;
-        g_samples_debug[g_samples_debug_used+i] = g_samples_r[g_samples_used+i];
-    }
-    if(cnt0>50) console.log("cnt0:",cnt0,samplenum);
-        
-    g_samples_used+=samplenum;
-    g_samples_debug_used+=samplenum;
-//    console.log("audiodatareceiver.write: append",samplenum,"total:",g_samples_used, g_samples_debug_used);
-
     shiftRecvbuf(6+payload_len);
 }
 
@@ -82,7 +79,7 @@ function parseRecvbuf() {
 class AudioReceiver {
     constructor() {}
     write(ab) {
-        appendRecvbuf(ab);
+        appendRecvbuf(ab);        
         parseRecvbuf();
     }
 };
@@ -91,17 +88,6 @@ var g_audioreceiver = new AudioReceiver();
 
 
 function startAudioPlayer(url) {
-/*    
-    var ws = new WebSocket(url,["hoge"]);
-    ws.binaryType="arraybuffer";
-    ws.onopen = function() { console.log("ws onopen"); }
-    ws.onclose = function() { console.log("ws onclose"); }
-    ws.onerror = function() { console.log("ws onerror"); }
-    ws.onmessage = function(ev) {
-        appendRecvbuf(ev.data);
-        parseRecvbuf();
-    }
-*/
     var ws = new JSMpeg.Source.WebSocket(url,{});
     ws.connect(g_audioreceiver);
     ws.start();
@@ -126,13 +112,13 @@ g_sn.onaudioprocess = function(audioProcessingEvent) {
         }
         shiftSamples(inputBuffer.length);
         if(g_samples_used > 2048) {
-            console.log("buffering too much?");
+            console.log("buffer shift more");
             shiftSamples(512);
         }
     } else {
         for (var i = 0; i < inputBuffer.length; i++) {
-            out0[i] = Math.random()*0.1;
-            out1[i] = Math.random()*0.1;
+            out0[i] = Math.random()*0.05;
+            out1[i] = Math.random()*0.05;
         }
     }
 }
