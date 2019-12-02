@@ -1,9 +1,10 @@
 // receiving samples from ws
 
 var FUNCID_PCM_SAMPLES = 10;
-var FUNCID_KEY_EVENT = 20;
-var FUNCID_CLICK_EVENT = 21;
-var FUNCID_MOUSEMOVE_EVENT = 22;
+var FUNCID_KEYUP_EVENT = 20;
+var FUNCID_KEYDOWN_EVENT = 21;
+var FUNCID_CLICK_EVENT = 22;
+var FUNCID_MOUSEMOVE_EVENT = 23;
 
 var g_samples_r=new Float32Array(48000);
 var g_samples_l=new Float32Array(48000);
@@ -106,7 +107,7 @@ function sendRPCInt(funcid,iargs) {
     dv.setInt16(4,funcid,true);
     for(var i=0;i<iargs.length;i++) dv.setInt32(6+i*4,iargs[i],true);
     console.log("sendRPCInt:", ab,g_ws);
-    g_ws.socket.send(ab);
+    if(g_ws.established) g_ws.socket.send(ab);
 }
 
 // playing samples
@@ -169,14 +170,58 @@ function debugPressed() {
 
 /////////////
 
+function keyToGLFWIntKey(key,code) {
+    if(key.length==1) return key.charCodeAt(0);
+    switch(key) {
+    case "Shift":
+        if(code=="ShiftLeft") return 340; //  GLFW_KEY_LEFT_SHIFT
+        if(code=="ShiftRight") return 344;  //  GLFW_KEY_RIGHT_SHIFT
+        break;
+    case "Control":
+        if(code=="ControlLeft") return 341; //  GLFW_KEY_LEFT_CONTROL
+        if(code=="ControlRight") return 345;  //  GLFW_KEY_RIGHT_CONTROL
+        break;
+    case "Alt":
+        if(code=="AltLeft") return 342; //  GLFW_KEY_LEFT_ALT
+        if(code=="AltRight") return 346;  //  GLFW_KEY_RIGHT_ALT
+        break;
+    case "ArrowUp": return 265; // GLFW_KEY_UP
+    case "ArrowDown": return 264; // GLFW_KEY_DOWN
+    case "ArrowRight": return 262; // GLFW_KEY_RIGHT
+    case "ArrowLeft": return 263; // GLFW_KEY_LEFT
+    case "Enter": return 257; // GLFW_KEY_ENTER
+    case "Tab": return 258; // GLFW_KEY_TAB
+    case "Backspace": return 259; // GLFW_KEY_BACKSPACE
+    case "Escape": return 256; // GLFW_KEY_ESCAPE
+    case "F1": return 290; // GLFW_KEY_F1
+    case "F2": return 291; // GLFW_KEY_F2
+    case "F3": return 292; // GLFW_KEY_F3
+    case "F4": return 293; // GLFW_KEY_F4
+    case "F5": return 294; // GLFW_KEY_F5
+    case "F6": return 295; // GLFW_KEY_F6
+    case "F7": return 296; // GLFW_KEY_F7
+    case "F8": return 297; // GLFW_KEY_F8
+    case "F9": return 298; // GLFW_KEY_F9
+    case "F10": return 299; // GLFW_KEY_F10
+    case "F11": return 300; // GLFW_KEY_F11
+    case "F12": return 301; // GLFW_KEY_F12       
+    default:
+        console.log("invalid key input:",key,code);
+        return 0;
+    }
+}
 // input events
 function notifyEventAudioPlayer(e) {
     if(e.type=="click") {
         console.log("click:", e.offsetX,e.offsetY,e);
         sendRPCInt(FUNCID_CLICK_EVENT, [e.offsetX, e.offsetY] );
     } else if(e.type=="keydown") {
-        console.log("kd",e.key);
+        var k=keyToGLFWIntKey(e.key,e.code);
+        sendRPCInt(FUNCID_KEYDOWN_EVENT, [k,e.repeat?1:0]);
+        console.log("kd",e);
     } else if(e.type=="keyup") {
+        var k=keyToGLFWIntKey(e.key,e.code);        
+        sendRPCInt(FUNCID_KEYUP_EVENT, [k]);        
         console.log("ku",e.key);
     } else if(e.type=="mousemove") {
         console.log("mousemove",e);
