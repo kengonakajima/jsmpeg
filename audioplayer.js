@@ -11,11 +11,8 @@ var FUNCID_MOUSEDOWN_EVENT = 25;
 
 var g_samples_r=new Float32Array(48000);
 var g_samples_l=new Float32Array(48000);
-
-var g_samples_debug=new Float32Array(48000*32);
-
 var g_samples_used=0;
-var g_samples_debug_used=0;
+
 
 function shiftSamples(n) {
     for(var i=n;i<g_samples_used;i++) {
@@ -75,11 +72,8 @@ function parseRecvbuf() {
             g_samples_l[g_samples_used+i*2] = mono;
             g_samples_r[g_samples_used+i*2+1] = mono;
             g_samples_l[g_samples_used+i*2+1] = mono;            
-            g_samples_debug[g_samples_debug_used+i*2] = mono;
-            g_samples_debug[g_samples_debug_used+i*2+1] = mono;
         }
         g_samples_used+=output_samplenum;
-        g_samples_debug_used+=output_samplenum;
     }
     shiftRecvbuf(6+payload_len);
 }
@@ -109,7 +103,7 @@ function sendRPCInt(funcid,iargs) {
     dv.setInt32(0,payload_len,true);
     dv.setInt16(4,funcid,true);
     for(var i=0;i<iargs.length;i++) dv.setInt32(6+i*4,iargs[i],true);
-    console.log("sendRPCInt:", ab,g_ws);
+//    console.log("sendRPCInt:", ab,g_ws);
     if(g_ws.established) g_ws.socket.send(ab);
 }
 
@@ -154,21 +148,6 @@ document.onclick = function() {
     }
 
 
-}
-
-function debugPressed() {
-    console.log(g_samples_debug);
-    var b=g_ctx.createBuffer(2,48000*32,48000);
-    var r = b.getChannelData(0);
-    var l = b.getChannelData(1);
-    for (var i = 0; i < g_samples_debug_used && i < 48000*32 ; i++) {    
-        r[i] = g_samples_debug[i];
-        l[i] = g_samples_debug[i];
-    }
-    var s=g_ctx.createBufferSource();
-    s.buffer=b;
-    s.connect(g_ctx.destination);
-    s.start();
 }
 
 /////////////
