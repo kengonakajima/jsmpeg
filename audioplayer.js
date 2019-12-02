@@ -5,6 +5,9 @@ var FUNCID_KEYUP_EVENT = 20;
 var FUNCID_KEYDOWN_EVENT = 21;
 var FUNCID_CLICK_EVENT = 22;
 var FUNCID_MOUSEMOVE_EVENT = 23;
+var FUNCID_MOUSEUP_EVENT = 24;
+var FUNCID_MOUSEDOWN_EVENT = 25;
+
 
 var g_samples_r=new Float32Array(48000);
 var g_samples_l=new Float32Array(48000);
@@ -213,22 +216,19 @@ function keyToGLFWIntKey(key,code) {
 // input events
 function notifyEventAudioPlayer(e) {
     if(e.type=="click") {
-        console.log("click:", e.offsetX,e.offsetY,e);
         sendRPCInt(FUNCID_CLICK_EVENT, [e.offsetX, e.offsetY] );
     } else if(e.type=="keydown") {
         var k=keyToGLFWIntKey(e.key,e.code);
         sendRPCInt(FUNCID_KEYDOWN_EVENT, [k,e.repeat?1:0]);
-        console.log("kd",e);
     } else if(e.type=="keyup") {
         var k=keyToGLFWIntKey(e.key,e.code);        
         sendRPCInt(FUNCID_KEYUP_EVENT, [k]);        
-        console.log("ku",e.key);
     } else if(e.type=="mousemove") {
-        console.log("mousemove",e);
+        sendRPCInt(FUNCID_MOUSEMOVE_EVENT,[e.offsetX,e.offsetY])
     } else if(e.type=="mouseup") {
-        console.log("mouseup",e);
+        sendRPCInt(FUNCID_MOUSEUP_EVENT,[e.offsetX,e.offsetY])        
     } else if(e.type=="mousedown") {
-        console.log("mousedown",e);                
+        sendRPCInt(FUNCID_MOUSEDOWN_EVENT,[e.offsetX,e.offsetY])                
     } else {
         console.log("other",e);        
     }
