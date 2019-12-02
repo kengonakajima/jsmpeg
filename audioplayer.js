@@ -171,7 +171,7 @@ function debugPressed() {
 /////////////
 
 function keyToGLFWIntKey(key,code) {
-    if(key.length==1) return key.charCodeAt(0);
+    if(key.length==1) return key.toUpperCase().charCodeAt(0);
     switch(key) {
     case "Shift":
         if(code=="ShiftLeft") return 340; //  GLFW_KEY_LEFT_SHIFT
