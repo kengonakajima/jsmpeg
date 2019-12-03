@@ -217,10 +217,11 @@ var g_clickCount=0;
 var g_lastPing=0;
 var g_total_audio_recv=0;
 var g_network_stats="";
+var g_last_decode_time = 0;
 
 function updateStatus() {
     var e=document.getElementById("status");
-    e.innerHTML = "mouseDown:"+g_mouseButtonDown + " ofsX:"+g_ofsX + " ofsY:"+g_ofsY + "<BR>" +
+    e.innerHTML = "mouseDown:"+g_mouseButtonDown + " ofsX:"+g_ofsX + " ofsY:"+g_ofsY + " decode:" + g_last_decode_time + "<BR>" +
         "click:" + g_clickCount + " clickat:" + g_lastClickAt + " ping:" + g_lastPing + "ms<BR>" +
         g_network_stats;
 

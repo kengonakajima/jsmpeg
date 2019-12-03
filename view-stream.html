@@ -33,7 +33,7 @@
       </td>
       <td width=50></td>
       <td>
-        <span id="status" style="color:#fff; font-size:4px;">status</span>
+        <span id="status" style="color:#fff; font-size:12px;">status</span>
       </td>
     </tr>
   </table>
@@ -44,7 +44,7 @@
 	<script type="text/javascript">
 		var canvas = document.getElementById('video-canvas');
 		var url = 'ws://'+document.location.hostname+':8082/';
-	  g_mpegplayer = new JSMpeg.Player(url, {canvas: canvas });
+	  g_mpegplayer = new JSMpeg.Player(url, {canvas: canvas, onVideoDecode: function(hoge,elt) { g_last_decode_time=elt; } });
       console.log("mpegplayer:",g_mpegplayer);
       startAudioPlayer("ws://"+document.location.hostname+':8084/');
 
