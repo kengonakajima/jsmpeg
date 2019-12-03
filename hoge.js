@@ -1107,6 +1107,8 @@ var WSSource = function(url, options) {
 
 	this.onEstablishedCallback = options.onSourceEstablished;
 	this.onCompletedCallback = options.onSourceCompleted; // Never used
+
+    this.totalBytesReceived = 0;
 };
 
 WSSource.prototype.connect = function(destination) {
@@ -1160,6 +1162,7 @@ WSSource.prototype.onMessage = function(ev) {
 	if (this.destination) {
 		this.destination.write(ev.data);
 	}
+    this.totalBytesReceived += ev.data.byteLength;
 };
 
 return WSSource;

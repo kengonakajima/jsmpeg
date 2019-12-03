@@ -9,6 +9,7 @@ var FUNCID_MOUSEMOVE_EVENT = 23;
 var FUNCID_MOUSEUP_EVENT = 24;
 var FUNCID_MOUSEDOWN_EVENT = 25;
 
+var g_mpegplayer;
 
 var g_samples_r=new Float32Array(48000);
 var g_samples_l=new Float32Array(48000);
@@ -96,6 +97,7 @@ function parseRecvbuf() {
 class AudioReceiver {
     constructor() {}
     write(ab) {
+        g_total_audio_recv += ab.byteLength;
         appendRecvbuf(ab);        
         for(var i=0;i<10;i++) parseRecvbuf();
     }
@@ -213,11 +215,25 @@ var g_mouseButtonDown=false;
 var g_lastClickAt=0;
 var g_clickCount=0;
 var g_lastPing=0;
+var g_total_audio_recv=0;
+
 function updateStatus() {
     var e=document.getElementById("status");
     e.innerHTML = "mouseDown:"+g_mouseButtonDown + " ofsX:"+g_ofsX + " ofsY:"+g_ofsY + "<BR>" +
-        "click:" + g_clickCount + " clickat:" + g_lastClickAt + " ping:" + g_lastPing + "ms";
+        "click:" + g_clickCount + " clickat:" + g_lastClickAt + " ping:" + g_lastPing + "ms<BR>" +
+        g_network_stats;
+
 }
+setInterval(function() {
+    if(g_mpegplayer) {
+        
+        g_network_stats = "audioRecvB:" + g_total_audio_recv + " videoRecvB:" + g_mpegplayer.source.totalBytesReceived;
+        g_mpegplayer.source.totalBytesReceived=0;
+        g_total_audio_recv=0;
+    }                     
+},1000);
+
+
 function notifyEventAudioPlayer(e) {
     if(e.type=="click") {
         g_clickCount++;

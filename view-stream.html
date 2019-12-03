@@ -44,8 +44,8 @@
 	<script type="text/javascript">
 		var canvas = document.getElementById('video-canvas');
 		var url = 'ws://'+document.location.hostname+':8082/';
-	  var mpegplayer = new JSMpeg.Player(url, {canvas: canvas });
-      console.log("mpegplayer:",mpegplayer);
+	  g_mpegplayer = new JSMpeg.Player(url, {canvas: canvas });
+      console.log("mpegplayer:",g_mpegplayer);
       startAudioPlayer("ws://"+document.location.hostname+':8084/');
 
       document.addEventListener( "keydown", function(e) {
