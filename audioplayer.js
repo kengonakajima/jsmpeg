@@ -193,8 +193,21 @@ function keyToGLFWIntKey(key,code) {
     }
 }
 // input events
+
+var g_ofsX=0, g_ofsY=0;
+var g_mouseButtonDown=false;
+var g_lastClickAt=0;
+var g_clickCount=0;
+function updateStatus() {
+    var e=document.getElementById("status");
+    e.innerHTML = "mouseDown:"+g_mouseButtonDown + " ofsX:"+g_ofsX + " ofsY:"+g_ofsY + "<BR>" +
+        "click:" + g_clickCount + " clickat:" + g_lastClickAt;
+}
 function notifyEventAudioPlayer(e) {
     if(e.type=="click") {
+        g_clickCount++;
+        g_lastClickAt=performance.now();
+        updateStatus();
         sendRPCInt(FUNCID_CLICK_EVENT, [e.offsetX, e.offsetY] );
     } else if(e.type=="keydown") {
         var k=keyToGLFWIntKey(e.key,e.code);
@@ -204,11 +217,26 @@ function notifyEventAudioPlayer(e) {
         sendRPCInt(FUNCID_KEYUP_EVENT, [k]);        
     } else if(e.type=="mousemove") {
         sendRPCInt(FUNCID_MOUSEMOVE_EVENT,[e.offsetX,e.offsetY])
+        g_ofsX=e.offsetX;
+        g_ofsY=e.offsetY;
+        updateStatus();
     } else if(e.type=="mouseup") {
+        g_mouseButtonDown=false;
+        updateStatus();        
         sendRPCInt(FUNCID_MOUSEUP_EVENT,[e.offsetX,e.offsetY])        
     } else if(e.type=="mousedown") {
+        g_mouseButtonDown=true;
+        updateStatus();        
         sendRPCInt(FUNCID_MOUSEDOWN_EVENT,[e.offsetX,e.offsetY])                
     } else {
         console.log("other",e);        
     }
+}
+function btnUp(keyname) {
+    var k=keyToGLFWIntKey(keyname);
+    sendRPCInt(FUNCID_KEYUP_EVENT,[k])
+}
+function btnDown(keyname) {
+    var k=keyToGLFWIntKey(keyname);
+    sendRPCInt(FUNCID_KEYDOWN_EVENT,[k,0])    
 }
