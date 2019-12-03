@@ -1,5 +1,6 @@
 // receiving samples from ws
 
+var FUNCID_ECHO = 1;
 var FUNCID_PCM_SAMPLES = 10;
 var FUNCID_KEYUP_EVENT = 20;
 var FUNCID_KEYDOWN_EVENT = 21;
@@ -45,10 +46,16 @@ function shiftRecvbuf(n) {
     }
     g_recvbuf_used-=n;
 }
+function get_u32(ab,ofs) {
+    return ab[ofs]+(ab[ofs+1]*256)+(ab[ofs+2]*65536)+(ab[ofs+3]*65536*256);
+}
+function get_u16(ab,ofs) {
+    return ab[ofs]+(ab[ofs+1]*256);
+}
 function parseRecvbuf() {
     if(g_recvbuf_used<6) return;
-    var payload_len = g_recvbuf[0] + (g_recvbuf[1]*256) + (g_recvbuf[2]*256*256); // ignore [3]
-    var funcid = g_recvbuf[4]+(g_recvbuf[5]*256);
+    var payload_len = get_u32(g_recvbuf,0);
+    var funcid = get_u16(g_recvbuf,4);
 
     if(g_recvbuf_used<6+payload_len) {
         console.log("parseRecvbuf: need more data");
@@ -65,7 +72,7 @@ function parseRecvbuf() {
         }
         for(var i=0;i<input_samplenum;i++) {
             var ind=6+i*2;
-            var u16 = (g_recvbuf[ind] + (g_recvbuf[ind+1]*256));
+            var u16 = get_u16(g_recvbuf,ind);
             var i16= u16>32767 ? -(65536-u16) : u16;
             var mono= i16/32768;
             g_samples_r[g_samples_used+i*2] = mono;
@@ -74,7 +81,14 @@ function parseRecvbuf() {
             g_samples_l[g_samples_used+i*2+1] = mono;            
         }
         g_samples_used+=output_samplenum;
+    } else if(funcid==FUNCID_ECHO) {
+        var sender_time = get_u32(g_recvbuf,6);
+        var nowms=parseInt(performance.now());
+        var dtms=nowms-sender_time;
+        g_lastPing=dtms;
+        updateStatus();
     }
+    
     shiftRecvbuf(6+payload_len);
 }
 
@@ -83,7 +97,7 @@ class AudioReceiver {
     constructor() {}
     write(ab) {
         appendRecvbuf(ab);        
-        parseRecvbuf();
+        for(var i=0;i<10;i++) parseRecvbuf();
     }
 };
     
@@ -198,15 +212,16 @@ var g_ofsX=0, g_ofsY=0;
 var g_mouseButtonDown=false;
 var g_lastClickAt=0;
 var g_clickCount=0;
+var g_lastPing=0;
 function updateStatus() {
     var e=document.getElementById("status");
     e.innerHTML = "mouseDown:"+g_mouseButtonDown + " ofsX:"+g_ofsX + " ofsY:"+g_ofsY + "<BR>" +
-        "click:" + g_clickCount + " clickat:" + g_lastClickAt;
+        "click:" + g_clickCount + " clickat:" + g_lastClickAt + " ping:" + g_lastPing + "ms";
 }
 function notifyEventAudioPlayer(e) {
     if(e.type=="click") {
         g_clickCount++;
-        g_lastClickAt=performance.now();
+        g_lastClickAt=parseInt(performance.now());
         updateStatus();
         sendRPCInt(FUNCID_CLICK_EVENT, [e.offsetX, e.offsetY] );
     } else if(e.type=="keydown") {
@@ -240,3 +255,7 @@ function btnDown(keyname) {
     var k=keyToGLFWIntKey(keyname);
     sendRPCInt(FUNCID_KEYDOWN_EVENT,[k,0])    
 }
+
+setInterval(function() {
+    sendRPCInt(FUNCID_ECHO,[parseInt(performance.now())]);
+}, 1000);
