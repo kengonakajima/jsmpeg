@@ -216,6 +216,7 @@ var g_lastClickAt=0;
 var g_clickCount=0;
 var g_lastPing=0;
 var g_total_audio_recv=0;
+var g_network_stats="";
 
 function updateStatus() {
     var e=document.getElementById("status");
