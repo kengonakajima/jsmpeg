@@ -87,6 +87,7 @@ function parseRecvbuf() {
         var nowms=parseInt(performance.now());
         var dtms=nowms-sender_time;
         g_lastPing=dtms;
+        console.log("PING:", performance.now(), sender_time );
         updateStatus();
     }
     
@@ -152,7 +153,15 @@ g_sn.onaudioprocess = function(audioProcessingEvent) {
     }
 }
 
-var g_src = g_ctx.createConstantSource();
+//var g_src = g_ctx.createConstantSource(); // no in mobile safari
+var silencebuf = g_ctx.createBuffer(2,2000,48000);
+for(var i=0;i<2000;i++) {
+    silencebuf.getChannelData(0)[i]=0;
+    silencebuf.getChannelData(1)[i]=0;    
+}
+var g_src = g_ctx.createBufferSource();
+g_src.buffer = silencebuf;
+
 g_src.connect(g_sn);
 g_sn.connect(g_ctx.destination);
 
