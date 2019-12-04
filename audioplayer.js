@@ -8,6 +8,9 @@ var FUNCID_CLICK_EVENT = 22;
 var FUNCID_MOUSEMOVE_EVENT = 23;
 var FUNCID_MOUSEUP_EVENT = 24;
 var FUNCID_MOUSEDOWN_EVENT = 25;
+var FUNCID_TOUCHSTART_EVENT = 26;
+var FUNCID_TOUCHEND_EVENT = 27;
+var FUNCID_TOUCHMOVE_EVENT = 28;
 
 var g_mpegplayer;
 
@@ -87,7 +90,6 @@ function parseRecvbuf() {
         var nowms=parseInt(performance.now());
         var dtms=nowms-sender_time;
         g_lastPing=dtms;
-        console.log("PING:", performance.now(), sender_time );
         updateStatus();
     }
     
@@ -128,7 +130,8 @@ function sendRPCInt(funcid,iargs) {
 
 window.AudioContext = window.AudioContext || window.webkitAudioContext;  
 var g_ctx = new AudioContext();
-var g_sn = g_ctx.createScriptProcessor(256,2,2);
+console.log("AUDIOCONTEXT:",g_ctx);
+var g_sn = g_ctx.createScriptProcessor(1024,2,2);
 console.log("audiodatareceiver:",g_ctx,g_sn);
 g_sn.onaudioprocess = function(audioProcessingEvent) {
     var inputBuffer = audioProcessingEvent.inputBuffer;
@@ -141,9 +144,9 @@ g_sn.onaudioprocess = function(audioProcessingEvent) {
             out1[i] = g_samples_l[i];
         }
         shiftSamples(inputBuffer.length);
-        if(g_samples_used > 2048) {
-            console.log("buffer shift more");
-            shiftSamples(512);
+        if(g_samples_used > 8192) {
+            console.log("buffer shift more:", g_samples_used, inputBuffer.length);
+            shiftSamples(4096);
         }
     } else {
         for (var i = 0; i < inputBuffer.length; i++) {
@@ -227,11 +230,12 @@ var g_lastPing=0;
 var g_total_audio_recv=0;
 var g_network_stats="";
 var g_last_decode_time = 0;
+var g_touchCount=0;
 
 function updateStatus() {
     var e=document.getElementById("status");
     e.innerHTML = "mouseDown:"+g_mouseButtonDown + " ofsX:"+g_ofsX + " ofsY:"+g_ofsY + " decode:" + g_last_decode_time + "<BR>" +
-        "click:" + g_clickCount + " clickat:" + g_lastClickAt + " ping:" + g_lastPing + "ms<BR>" +
+        "click:" + g_clickCount + " touch:" + g_touchCount + " ping:" + g_lastPing + "ms<BR>" +
         g_network_stats;
 
 }
@@ -269,7 +273,16 @@ function notifyEventAudioPlayer(e) {
     } else if(e.type=="mousedown") {
         g_mouseButtonDown=true;
         updateStatus();        
-        sendRPCInt(FUNCID_MOUSEDOWN_EVENT,[e.offsetX,e.offsetY])                
+        sendRPCInt(FUNCID_MOUSEDOWN_EVENT,[e.offsetX,e.offsetY])
+    } else if(e.type=="touchstart") {
+        g_touchCount++;
+        updateStatus();
+        sendRPCInt(FUNCID_TOUCHSTART_EVENT, [e.layerX, e.layerY] );
+    } else if(e.type=="touchend") {
+        sendRPCInt(FUNCID_TOUCHEND_EVENT, [e.layerX, e.layerY] );
+    } else if(e.type=="touchmove") {
+        console.log("move:",e);
+        sendRPCInt(FUNCID_TOUCHMOVE_EVENT, [e.layerX, e.layerY] );       
     } else {
         console.log("other",e);        
     }

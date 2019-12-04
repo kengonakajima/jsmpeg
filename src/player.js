@@ -222,6 +222,7 @@ Player.prototype.updateForStreaming = function() {
 
 	if (this.video) {
 		this.video.decode();
+		this.video.decode();        
 	}
 
 	if (this.audio) {

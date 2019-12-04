@@ -33,7 +33,7 @@
       </td>
       <td width=50></td>
       <td>
-        <span id="status" style="color:#fff; font-size:12px;">status</span>
+        <span id="status" style="color:#fff; font-size:20px;">status</span>
         <br>
       </td>
       
@@ -44,9 +44,13 @@
   <script type="text/javascript" src="hoge.js"></script>
 	<script type="text/javascript" src="audioplayer.js"></script>  
 	<script type="text/javascript">
-		var canvas = document.getElementById('video-canvas');
-		var url = 'ws://'+document.location.hostname+':8082/';
-	  g_mpegplayer = new JSMpeg.Player(url, {canvas: canvas, onVideoDecode: function(hoge,elt) { g_last_decode_time=elt; } });
+      //      var isMobileSafari = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/);
+      var isMobileSafari=false;
+      
+      
+      var canvas = document.getElementById('video-canvas');
+	  var url = 'ws://'+document.location.hostname+':8082/';
+	  g_mpegplayer = new JSMpeg.Player(url, {canvas: canvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { g_last_decode_time=elt; } });
       console.log("mpegplayer:",g_mpegplayer);
       startAudioPlayer("ws://"+document.location.hostname+':8084/');
 
@@ -68,6 +72,25 @@
       canvas.addEventListener( "mousedown", function(e) {
           notifyEventAudioPlayer(e);
       });
+      var touchstart_cnt=0, touchend_cnt=0;
+      canvas.addEventListener( "touchstart", function(e) {
+          document.documentElement.style.overflow = 'hidden';
+          touchstart_cnt++;
+          if(touchstart_cnt>1 && touchend_cnt>1) e.preventDefault();
+          notifyEventAudioPlayer(e);          
+      });
+
+      document.addEventListener('touchend', function(e) {
+          document.documentElement.style.overflow = 'auto';
+          touchend_cnt++;
+          if(touchstart_cnt>1 && touchend_cnt>1) e.preventDefault();
+          notifyEventAudioPlayer(e);                    
+      }, false);
+      document.addEventListener('touchmove', function(e) {
+          e.preventDefault();
+          notifyEventAudioPlayer(e);                              
+      }, false);
+      
 	</script>
     
 </body>
