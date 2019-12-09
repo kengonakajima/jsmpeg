@@ -1,5 +1,6 @@
 // receiving samples from ws
 
+var FUNCID_INIT = 0;
 var FUNCID_ECHO = 1;
 var FUNCID_PCM_SAMPLES = 10;
 var FUNCID_KEYUP_EVENT = 20;
@@ -18,6 +19,7 @@ var g_samples_r=new Float32Array(48000);
 var g_samples_l=new Float32Array(48000);
 var g_samples_used=0;
 
+var g_clientId=0; // 0 for not init
 
 function shiftSamples(n) {
     for(var i=n;i<g_samples_used;i++) {
@@ -91,6 +93,9 @@ function parseRecvbuf() {
         var dtms=nowms-sender_time;
         g_lastPing=dtms;
         updateStatus();
+    } else if(funcid==FUNCID_INIT) {
+        g_clientId=get_u32(g_recvbuf,6);
+        console.log("FUNCID_INIT: g_clientId:",g_clientId);
     }
     
     shiftRecvbuf(6+payload_len);
@@ -254,48 +259,48 @@ function notifyEventAudioPlayer(e) {
         g_clickCount++;
         g_lastClickAt=parseInt(performance.now());
         updateStatus();
-        sendRPCInt(FUNCID_CLICK_EVENT, [e.offsetX, e.offsetY] );
+        sendRPCInt(FUNCID_CLICK_EVENT, [g_clientId,e.offsetX, e.offsetY] );
     } else if(e.type=="keydown") {
         var k=keyToGLFWIntKey(e.key,e.code);
-        sendRPCInt(FUNCID_KEYDOWN_EVENT, [k,e.repeat?1:0]);
+        sendRPCInt(FUNCID_KEYDOWN_EVENT, [g_clientId,k,e.repeat?1:0]);
     } else if(e.type=="keyup") {
         var k=keyToGLFWIntKey(e.key,e.code);        
-        sendRPCInt(FUNCID_KEYUP_EVENT, [k]);        
+        sendRPCInt(FUNCID_KEYUP_EVENT, [g_clientId,k]);        
     } else if(e.type=="mousemove") {
-        sendRPCInt(FUNCID_MOUSEMOVE_EVENT,[e.offsetX,e.offsetY])
+        sendRPCInt(FUNCID_MOUSEMOVE_EVENT,[g_clientId,e.offsetX,e.offsetY])
         g_ofsX=e.offsetX;
         g_ofsY=e.offsetY;
         updateStatus();
     } else if(e.type=="mouseup") {
         g_mouseButtonDown=false;
         updateStatus();        
-        sendRPCInt(FUNCID_MOUSEUP_EVENT,[e.offsetX,e.offsetY])        
+        sendRPCInt(FUNCID_MOUSEUP_EVENT,[g_clientId,e.offsetX,e.offsetY])        
     } else if(e.type=="mousedown") {
         g_mouseButtonDown=true;
         updateStatus();        
-        sendRPCInt(FUNCID_MOUSEDOWN_EVENT,[e.offsetX,e.offsetY])
+        sendRPCInt(FUNCID_MOUSEDOWN_EVENT,[g_clientId,e.offsetX,e.offsetY])
     } else if(e.type=="touchstart") {
         g_touchCount++;
         updateStatus();
-        sendRPCInt(FUNCID_TOUCHSTART_EVENT, [e.layerX, e.layerY] );
+        sendRPCInt(FUNCID_TOUCHSTART_EVENT, [g_clientId,e.layerX, e.layerY] );
     } else if(e.type=="touchend") {
-        sendRPCInt(FUNCID_TOUCHEND_EVENT, [e.layerX, e.layerY] );
+        sendRPCInt(FUNCID_TOUCHEND_EVENT, [g_clientId,e.layerX, e.layerY] );
     } else if(e.type=="touchmove") {
         console.log("move:",e);
-        sendRPCInt(FUNCID_TOUCHMOVE_EVENT, [e.layerX, e.layerY] );       
+        sendRPCInt(FUNCID_TOUCHMOVE_EVENT, [g_clientId,e.layerX, e.layerY] );       
     } else {
         console.log("other",e);        
     }
 }
 function btnUp(keyname) {
     var k=keyToGLFWIntKey(keyname);
-    sendRPCInt(FUNCID_KEYUP_EVENT,[k])
+    sendRPCInt(FUNCID_KEYUP_EVENT,[g_clientId,k])
 }
 function btnDown(keyname) {
     var k=keyToGLFWIntKey(keyname);
-    sendRPCInt(FUNCID_KEYDOWN_EVENT,[k,0])    
+    sendRPCInt(FUNCID_KEYDOWN_EVENT,[g_clientId,k,0])    
 }
 
 setInterval(function() {
-    sendRPCInt(FUNCID_ECHO,[parseInt(performance.now())]);
+    sendRPCInt(FUNCID_ECHO,[g_clientId,parseInt(performance.now())]);
 }, 1000);
