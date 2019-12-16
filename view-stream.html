@@ -39,6 +39,15 @@
       
     </tr>
   </table>
+
+  <canvas id="minivideo-canvas-0"></canvas>
+  <canvas id="minivideo-canvas-1"></canvas>
+  <canvas id="minivideo-canvas-2"></canvas>
+  <canvas id="minivideo-canvas-3"></canvas>
+  <canvas id="minivideo-canvas-4"></canvas>
+  <canvas id="minivideo-canvas-5"></canvas>
+  <canvas id="minivideo-canvas-6"></canvas>
+  <canvas id="minivideo-canvas-7"></canvas>
   
   
   <script type="text/javascript" src="hoge.js"></script>
@@ -48,10 +57,10 @@
       var isMobileSafari=false;
       
       
-      var canvas = document.getElementById('video-canvas');
-	  var url = 'ws://'+document.location.hostname+':8082/';
-	  g_mpegplayer = new JSMpeg.Player(url, {canvas: canvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { g_last_decode_time=elt; } });
-      console.log("mpegplayer:",g_mpegplayer);
+      var maincanvas = document.getElementById('video-canvas');
+	  var mainurl = 'ws://'+document.location.hostname+':8082/';
+	  var mainplayer = new JSMpeg.Player(mainurl, {canvas: maincanvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { g_last_decode_time=elt; } });
+      console.log("mpegplayer:",mainplayer);
       startAudioPlayer("ws://"+document.location.hostname+':8084/');
 
       document.addEventListener( "keydown", function(e) {
@@ -60,20 +69,20 @@
       document.addEventListener( "keyup", function(e) {
           notifyEventAudioPlayer(e);         
       });
-      canvas.addEventListener( "click", function(e) {
+      maincanvas.addEventListener( "click", function(e) {
           notifyEventAudioPlayer(e);          
       });
-      canvas.addEventListener( "mousemove", function(e) {
+      maincanvas.addEventListener( "mousemove", function(e) {
           notifyEventAudioPlayer(e);          
       });
-      canvas.addEventListener( "mouseup", function(e) {
+      maincanvas.addEventListener( "mouseup", function(e) {
           notifyEventAudioPlayer(e);          
       });
-      canvas.addEventListener( "mousedown", function(e) {
+      maincanvas.addEventListener( "mousedown", function(e) {
           notifyEventAudioPlayer(e);
       });
       var touchstart_cnt=0, touchend_cnt=0;
-      canvas.addEventListener( "touchstart", function(e) {
+      maincanvas.addEventListener( "touchstart", function(e) {
           document.documentElement.style.overflow = 'hidden';
           touchstart_cnt++;
           if(touchstart_cnt>1 && touchend_cnt>1) e.preventDefault();
@@ -90,7 +99,13 @@
           e.preventDefault();
           notifyEventAudioPlayer(e);                              
       }, false);
-      
+
+      // mini
+      for(var i=0;i<8;i++) {
+          var minicanvas = document.getElementById('minivideo-canvas-'+i);      
+	      var miniurl = 'ws://'+document.location.hostname+':8086/';
+	      var miniplayer = new JSMpeg.Player(miniurl, {canvas: minicanvas, disableGl: isMobileSafari});
+      }
 	</script>
     
 </body>
