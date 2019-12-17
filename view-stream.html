@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>JSMpeg Stream Client</title>
+	<title>Oneframe</title>
 	<style type="text/css">
 		html, body {
 			background-color: #111;
@@ -10,7 +10,8 @@
 	</style>
 	
 </head>
-<body>
+<body>  
+  <h1>Oneframe</h1>
   <canvas id="video-canvas"></canvas>
   <BR>
   <table>
@@ -56,13 +57,42 @@
       //      var isMobileSafari = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/);
       var isMobileSafari=false;
       
-      
+      var g_last_main_video_decode_at = 0;
       var maincanvas = document.getElementById('video-canvas');
 	  var mainurl = 'ws://'+document.location.hostname+':8082/';
-	  var mainplayer = new JSMpeg.Player(mainurl, {canvas: maincanvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { g_last_decode_time=elt; } });
+	  var mainplayer = new JSMpeg.Player(mainurl, {canvas: maincanvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { g_last_main_video_decode_at = Date.now(); } });
       console.log("mpegplayer:",mainplayer);
       startAudioPlayer("ws://"+document.location.hostname+':8084/');
 
+      var testurl = "http://"+document.location.hostname+":8000/testsrc.ts";
+      var testplayer = new JSMpeg.Player(testurl, {canvas: maincanvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { testplayer.play(); } });
+
+      var main_status_ws = createStatusCheckWS("ws://"+document.location.hostname+':8088/');
+
+      // mini
+      var minicanvas=[];
+      var miniplayer=[];
+      var minitestplayer=[];
+      for(var i=0;i<8;i++) {
+          minicanvas[i] = document.getElementById('minivideo-canvas-'+i);      
+	      var miniurl = 'ws://'+document.location.hostname+':8086/';
+	      miniplayer[i] = new JSMpeg.Player(miniurl, {canvas: minicanvas[i], disableGl: isMobileSafari});
+          var minitesturl = "http://"+document.location.hostname+':8000/minitestsrc.ts';
+          //          var minitestplayer = new JSMpeg.Player(minitesturl, {canvas: minicanvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { minitestplayer.play(); } });
+          minitestplayer[i] = new JSMpeg.Player(minitesturl, {canvas: minicanvas[i], disableGl: isMobileSafari, autoplay:true });                    
+      }
+      
+      setInterval( function() {
+          var elt=main_status_ws.getElapsedTimeAfterLastVideo();
+          if(elt < 400) {
+              testplayer.pause();
+              mainplayer.play();
+          } else {
+              testplayer.play();
+              mainplayer.pause();              
+          }
+      },250);
+      
       document.addEventListener( "keydown", function(e) {
           notifyEventAudioPlayer(e);         
       });
@@ -100,12 +130,7 @@
           notifyEventAudioPlayer(e);                              
       }, false);
 
-      // mini
-      for(var i=0;i<8;i++) {
-          var minicanvas = document.getElementById('minivideo-canvas-'+i);      
-	      var miniurl = 'ws://'+document.location.hostname+':8086/';
-	      var miniplayer = new JSMpeg.Player(miniurl, {canvas: minicanvas, disableGl: isMobileSafari});
-      }
+
 	</script>
     
 </body>

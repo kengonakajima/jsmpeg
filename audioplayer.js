@@ -3,6 +3,7 @@
 var FUNCID_INIT = 0;
 var FUNCID_ECHO = 1;
 var FUNCID_PCM_SAMPLES = 2;
+var FUNCID_STREAM_ACTIVE = 3;
 var FUNCID_KEYUP_EVENT = 20;
 var FUNCID_KEYDOWN_EVENT = 21;
 var FUNCID_CLICK_EVENT = 22;
@@ -32,7 +33,7 @@ function shiftSamples(n) {
 var g_recvbuf=new ArrayBuffer(1024*512);
 var g_recvbuf_used=0;
 
-
+var g_last_stream_active_at = 0;
 
 function appendRecvbuf(ab) {
     var u8a = new Uint8Array(ab);
@@ -44,7 +45,9 @@ function appendRecvbuf(ab) {
         g_recvbuf[g_recvbuf_used+i]=u8a[i];
     }
     g_recvbuf_used+=u8a.byteLength;
-//    console.log("appendRecvbuf:",g_recvbuf_used,ab.byteLength,g_recvbuf,ab);
+
+    for(var i=0;i<10;i++) parseRecvbuf();
+
 }
 function shiftRecvbuf(n) {
     for(var i=n;i<g_recvbuf_used;i++) {
@@ -101,24 +104,41 @@ function parseRecvbuf() {
     shiftRecvbuf(6+payload_len);
 }
 
+function createStatusCheckWS(url) {
+    var ws = new JSMpeg.Source.WebSocket(url,{});
+    ws.last_stream_active_at=0;
+    ws.connect( {write: function(ab) {
+        var u8a=new Uint8Array(ab);
+        console.log("WWWW:",u8a);
+        var payload_len = get_u32(u8a,0);
+        var funcid = get_u16(u8a,4);
+        console.log("status check funcid:",funcid, payload_len);
+        if(funcid==FUNCID_STREAM_ACTIVE) {
+            ws.last_stream_active_at = Date.now();
+            console.log("stream active:",ws.last_stream_active_at);
+        }
+    }});
+    ws.getElapsedTimeAfterLastVideo = function() {
+        return Date.now() - ws.last_stream_active_at;
+    }
+    
+    ws.start();
+    return ws;
+}
 
 class AudioReceiver {
     constructor() {}
     write(ab) {
         g_total_audio_recv += ab.byteLength;
         appendRecvbuf(ab);        
-        for(var i=0;i<10;i++) parseRecvbuf();
     }
 };
-    
 var g_audioreceiver = new AudioReceiver();
-
-
-var g_ws;
+var g_audio_ws;
 function startAudioPlayer(url) {
-    g_ws = new JSMpeg.Source.WebSocket(url,{});
-    g_ws.connect(g_audioreceiver);
-    g_ws.start();
+    g_audio_ws = new JSMpeg.Source.WebSocket(url,{});
+    g_audio_ws.connect(g_audioreceiver);
+    g_audio_ws.start();
 }
 function sendRPCInt(funcid,iargs) {
     var payload_len = 4*iargs.length;
@@ -127,8 +147,8 @@ function sendRPCInt(funcid,iargs) {
     dv.setInt32(0,payload_len,true);
     dv.setInt16(4,funcid,true);
     for(var i=0;i<iargs.length;i++) dv.setInt32(6+i*4,iargs[i],true);
-//    console.log("sendRPCInt:", ab,g_ws);
-    if(g_ws.established) g_ws.socket.send(ab);
+//    console.log("sendRPCInt:", ab,g_audio_ws);
+    if(g_audio_ws.established) g_audio_ws.socket.send(ab);
 }
 
 // playing samples
