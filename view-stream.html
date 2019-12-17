@@ -73,13 +73,17 @@
       var minicanvas=[];
       var miniplayer=[];
       var minitestplayer=[];
+      var ministatuscheckws=[];
       for(var i=0;i<8;i++) {
           minicanvas[i] = document.getElementById('minivideo-canvas-'+i);      
 	      var miniurl = 'ws://'+document.location.hostname+':8086/';
 	      miniplayer[i] = new JSMpeg.Player(miniurl, {canvas: minicanvas[i], disableGl: isMobileSafari});
           var minitesturl = "http://"+document.location.hostname+':8000/minitestsrc.ts';
           //          var minitestplayer = new JSMpeg.Player(minitesturl, {canvas: minicanvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { minitestplayer.play(); } });
-          minitestplayer[i] = new JSMpeg.Player(minitesturl, {canvas: minicanvas[i], disableGl: isMobileSafari, autoplay:true });                    
+          minitestplayer[i] = new JSMpeg.Player(minitesturl, {canvas: minicanvas[i], disableGl: isMobileSafari, autoplay:true });
+          var statusurl = 'ws://'+document.location.hostname+':8088/';
+          ministatuscheckws[i] = createStatusCheckWS(statusurl);
+          
       }
       
       setInterval( function() {
@@ -90,6 +94,16 @@
           } else {
               testplayer.play();
               mainplayer.pause();              
+          }
+          for(var i=0;i<8;i++) {
+              var elt = ministatuscheckws[i].getElapsedTimeAfterLastVideo();
+              if(elt<400) {
+                  minitestplayer[i].pause();
+                  miniplayer[i].play();
+              } else {
+                  minitestplayer[i].play();
+                  miniplayer[i].pause();                  
+              }
           }
       },250);
       

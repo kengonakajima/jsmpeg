@@ -109,13 +109,10 @@ function createStatusCheckWS(url) {
     ws.last_stream_active_at=0;
     ws.connect( {write: function(ab) {
         var u8a=new Uint8Array(ab);
-        console.log("WWWW:",u8a);
         var payload_len = get_u32(u8a,0);
         var funcid = get_u16(u8a,4);
-        console.log("status check funcid:",funcid, payload_len);
         if(funcid==FUNCID_STREAM_ACTIVE) {
             ws.last_stream_active_at = Date.now();
-            console.log("stream active:",ws.last_stream_active_at);
         }
     }});
     ws.getElapsedTimeAfterLastVideo = function() {
@@ -148,7 +145,7 @@ function sendRPCInt(funcid,iargs) {
     dv.setInt16(4,funcid,true);
     for(var i=0;i<iargs.length;i++) dv.setInt32(6+i*4,iargs[i],true);
 //    console.log("sendRPCInt:", ab,g_audio_ws);
-    if(g_audio_ws.established) g_audio_ws.socket.send(ab);
+    if(g_audio_ws && g_audio_ws.established) g_audio_ws.socket.send(ab);
 }
 
 // playing samples
