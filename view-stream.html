@@ -41,7 +41,9 @@
   <canvas id="minivideo-canvas-5" width=160 height=90></canvas>
   <span id="minioverlay-5" style="position: absolute; color:gray; font-size:8px;"></span>  
   <canvas id="minivideo-canvas-6" width=160 height=90></canvas>
-  <span id="minioverlay-6" style="position: absolute; color:gray; font-size:8px;"></span>  
+  <span id="minioverlay-6" style="position: absolute; color:gray; font-size:8px;"></span>
+  <canvas id="minivideo-canvas-7" width=160 height=90></canvas>
+  <span id="minioverlay-7" style="position: absolute; color:gray; font-size:8px;"></span>    
   <BR>
   
   <script type="text/javascript" src="hoge.js"></script>
@@ -49,9 +51,14 @@
     <script type="text/javascript" src="audioplayer.js"></script>  
 	<script type="text/javascript">
       var is_ja = (navigator.language == "ja" );
-      //      var isMobileSafari = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/);
-      var isMobileSafari=false;
+      var isMobileSafari = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/);
+      //var isMobileSafari=false;
 
+      var miniplayer_num = 8;
+      if(isMobileSafari) {
+          miniplayer_num = 2;
+      }
+      
       var g_total_video_recv_bytes=0;
       var g_last_main_video_decode_at = 0;
       var maincanvas = document.getElementById('video-canvas');
@@ -68,7 +75,7 @@
       var minicanvas=[];
       var miniplayer=[];
       var ministatuscheckws=[];
-      for(var i=0;i<8;i++) {
+      for(var i=0;i<miniplayer_num;i++) {
           minicanvas[i] = document.getElementById('minivideo-canvas-'+i);      
 	      var miniurl = 'ws://'+document.location.hostname+':8086/';
           miniplayer[i] = new JSMpeg.Player(miniurl, {canvas: minicanvas[i], disableGl: isMobileSafari});
@@ -88,7 +95,7 @@
               showWaitText(maincanvas,overlay,0,waitcnt,true);
               mainplayer.pause();              
           }
-          for(var i=0;i<7;i++) {
+          for(var i=0;i<miniplayer_num;i++) {
               var overlay = document.getElementById("minioverlay-"+i);
               var elt = ministatuscheckws[i].getElapsedTimeAfterLastVideo();
               if(elt<400) {
