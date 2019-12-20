@@ -23,6 +23,8 @@ var g_samples_used=0;
 
 var g_clientId=0; // 0 for not init
 
+var g_voicechat_enabled = false; // false to mute
+
 function shiftSamples(n) {
     for(var i=n;i<g_samples_used;i++) {
         g_samples_r[i-n]=g_samples_r[i];
@@ -345,9 +347,12 @@ setInterval(function() {
 
 
 ///////////////
-var g_voicechat_enabled = true;
 
+var g_setup_voicechat_done=false;
 function setupVoiceChat() {
+    if(g_setup_voicechat_done)return;
+    
+    g_setup_voicechat_done = true;
     AUDIO_BUFFER_SIZE = 1024;
     var callback= function(stream) {
         var source=g_ctx.createMediaStreamSource(stream);
@@ -373,25 +378,13 @@ function setupVoiceChat() {
                 }
   
             }
-//            updateAudioLevelIcon(max);
-
-            if(analyser) {
-                var fbc = analyser.frequencyBinCount;
-                var freqs = new Uint8Array(fbc);
-                analyser.getByteFrequencyData(freqs);
-                //            console.log("freqs:",freqs);                        
-            }
+            updateAudioLevelIcon(max);
         }
 
         var filter=g_ctx.createBiquadFilter();
         filter.type="bandpass";
         filter.frequency.value = (100 + 500) / 2; //いい(ひろい)ほう
         filter.Q.value = 0.3;
-
-        // マイクレベル確認用
-        var analyser = g_ctx.createAnalyser();
-        analyser.smoothingTimeConstant = 0.4;
-        analyser.fftSize = AUDIO_BUFFER_SIZE;
 
         // 音質には期待しないのでモノラルで飛ばす
         var processor = g_ctx.createScriptProcessor(AUDIO_BUFFER_SIZE, 1, 1);
@@ -403,7 +396,6 @@ function setupVoiceChat() {
 
         source.connect(filter);
         filter.connect(processor);
-        processor.connect(analyser);
         processor.connect(gain);
         gain.connect(g_ctx.destination);
 
@@ -422,8 +414,6 @@ function setupVoiceChat() {
     }
 }
 
-setupVoiceChat();
-
 
 function showWaitText(tgtcanvas,overlay,chnum,waitcnt,longmessage) {
     var rect = tgtcanvas.getBoundingClientRect();
@@ -440,3 +430,28 @@ function showWaitText(tgtcanvas,overlay,chnum,waitcnt,longmessage) {
 
 }
 
+
+function onClickMicIcon(){
+    if(!g_setup_voicechat_done) setupVoiceChat();
+    
+    g_voicechat_enabled = !g_voicechat_enabled;
+    
+    var mic = document.getElementById("mic");
+    if(g_voicechat_enabled) {
+        mic.src="images/active0.png";
+    } else {
+        mic.src="images/mute.png";
+    }
+}
+function updateAudioLevelIcon(level) {
+    var ind;
+    if(level>0.4){
+        ind=2;
+    } else if( level>0.1) {
+        ind=1;
+    } else {
+        ind=0;
+    }
+    var mic = document.getElementById("mic");
+    mic.src="images/active"+ind+".png";
+}
