@@ -4180,7 +4180,7 @@ var WebGLRenderer = function(options) {
 
 	// Setup the main YCrCbToRGBA shader
 	this.program = this.createProgram(
-		WebGLRenderer.SHADER.VERTEX_IDENTITY,
+		options.yflip ? WebGLRenderer.SHADER.VERTEX_IDENTITY_YFLIP : WebGLRenderer.SHADER.VERTEX_IDENTITY,
 		WebGLRenderer.SHADER.FRAGMENT_YCRCB_TO_RGBA
 	);
 	vertexAttr = gl.getAttribLocation(this.program, 'vertex');
@@ -4194,7 +4194,7 @@ var WebGLRenderer = function(options) {
 
 	// Setup the loading animation shader
 	this.loadingProgram = this.createProgram(
-		WebGLRenderer.SHADER.VERTEX_IDENTITY,
+		options.yflip ? WebGLRenderer.SHADER.VERTEX_IDENTITY_YFLIP : WebGLRenderer.SHADER.VERTEX_IDENTITY,
 		WebGLRenderer.SHADER.FRAGMENT_LOADING
 	);
 	vertexAttr = gl.getAttribLocation(this.loadingProgram, 'vertex');
@@ -4393,7 +4393,7 @@ WebGLRenderer.SHADER = {
 		'}'
 	].join('\n'),
 
-	VERTEX_IDENTITY: [
+	VERTEX_IDENTITY_YFLIP: [
 		'attribute vec2 vertex;',
 		'varying vec2 texCoord;',
 
@@ -4402,7 +4402,18 @@ WebGLRenderer.SHADER = {
 			'texCoord = vec2(vertex.x,1.0-vertex.y);',        // Y flipping 
 			'gl_Position = vec4((vertex * 2.0 - 1.0) * vec2(1, -1), 0.0, 1.0);',
 		'}'
+	].join('\n'),
+
+	VERTEX_IDENTITY: [
+		'attribute vec2 vertex;',
+		'varying vec2 texCoord;',
+
+		'void main() {',
+	   		'texCoord = vertex;',
+			'gl_Position = vec4((vertex * 2.0 - 1.0) * vec2(1, -1), 0.0, 1.0);',
+		'}'
 	].join('\n')
+    
 };
 
 return WebGLRenderer;
