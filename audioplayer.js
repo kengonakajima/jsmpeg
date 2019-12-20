@@ -101,7 +101,7 @@ function parseRecvbuf() {
             var sender_time = get_u32(g_recvbuf,6+4);
             var nowms=parseInt(performance.now());
             var dtms=nowms-sender_time;
-            g_lastPing=dtms;
+            g_lastRTT=dtms;
             var span=document.getElementById("ping");
             span.innerHTML= "ping:"+dtms+"ms";
             if(dtms<50) span.style.color="#0f0";
@@ -187,6 +187,8 @@ var g_ctx = new AudioContext();
 console.log("AUDIOCONTEXT:",g_ctx);
 var g_sn = g_ctx.createScriptProcessor(1024,2,2);
 console.log("audiodatareceiver:",g_ctx,g_sn);
+
+
 g_sn.onaudioprocess = function(audioProcessingEvent) {
     var inputBuffer = audioProcessingEvent.inputBuffer;
     var outputBuffer = audioProcessingEvent.outputBuffer;
@@ -198,7 +200,12 @@ g_sn.onaudioprocess = function(audioProcessingEvent) {
             out1[i] = g_samples_l[i];
         }
         shiftSamples(inputBuffer.length);
-        if(g_samples_used > 2048) {
+        var thres;
+        if(g_lastRTT>200) thres=8192;
+        if(g_lastRTT>100) thres=4096;        
+        else if(g_lastRTT>50) thres = 2048;
+        else thres=1024;
+        if(g_samples_used > thres) {
             shiftSamples(1024);
         }
     } else {
@@ -275,7 +282,7 @@ function keyToGLFWIntKey(key,code) {
 }
 // input events
 
-var g_lastPing=0;
+var g_lastRTT=0;
 var g_total_audio_recv=0;
 
 
