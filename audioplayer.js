@@ -193,8 +193,8 @@ g_sn.onaudioprocess = function(audioProcessingEvent) {
         }
     } else {
         for (var i = 0; i < inputBuffer.length; i++) {
-            out0[i] = Math.random()*0.01;
-            out1[i] = Math.random()*0.01;
+            out0[i] = 0;//Math.random()*0.01;
+            out1[i] = 0;//Math.random()*0.01;
         }
     }
 }
