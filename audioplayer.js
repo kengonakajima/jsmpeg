@@ -2,8 +2,9 @@
 
 var FUNCID_INIT = 0;
 var FUNCID_ECHO = 1;
-var FUNCID_PCM_SAMPLES = 2;
+var FUNCID_PCM_SAMPLES = 2; // 24Kmono i16le
 var FUNCID_STREAM_ACTIVE = 3;
+var FUNCID_VOICE_INPUT_PCM_SAMPLES = 4; // 48k mono i16le
 var FUNCID_KEYUP_EVENT = 20;
 var FUNCID_KEYDOWN_EVENT = 21;
 var FUNCID_CLICK_EVENT = 22;
@@ -145,6 +146,28 @@ function sendRPCInt(funcid,iargs) {
     dv.setInt16(4,funcid,true);
     for(var i=0;i<iargs.length;i++) dv.setInt32(6+i*4,iargs[i],true);
 //    console.log("sendRPCInt:", ab,g_audio_ws);
+    if(g_audio_ws && g_audio_ws.established) g_audio_ws.socket.send(ab);
+}
+function sendRPCVoice(buf) {
+    var f32a = new Float32Array(buf);
+    var max=0;
+    for(var i=0;i<f32a.length;i++) {
+        if(f32a[i]>max)max=f32a[i];
+    }
+    console.log("sendRPCVoice:",f32a.length,max);
+    var i16a = new Int16Array(f32a.length);
+    for(var i=0;i<f32a.length;i++) {
+        i16a[i]=f32a[i]*32767;
+    }
+    var payload_len=i16a.length*2;
+    var ab=new ArrayBuffer(4+2+payload_len);
+    var dv=new DataView(ab);
+    dv.setInt32(0,payload_len,true);
+    dv.setInt16(4,FUNCID_VOICE_INPUT_PCM_SAMPLES,true);
+    for(var i=0;i<i16a.length;i++) {
+        dv.setInt16(6+i*2,i16a[i],true);
+    }
+    console.log("buftop:",i16a[0]);
     if(g_audio_ws && g_audio_ws.established) g_audio_ws.socket.send(ab);
 }
 
@@ -321,3 +344,86 @@ function btnDown(keyname) {
 setInterval(function() {
     sendRPCInt(FUNCID_ECHO,[g_clientId,parseInt(performance.now())]);
 }, 1000);
+
+
+///////////////
+var g_voicechat_enabled = true;
+
+function setupVoiceChat() {
+    AUDIO_BUFFER_SIZE = 1024;
+    var callback= function(stream) {
+        var source=g_ctx.createMediaStreamSource(stream);
+        var processor=g_ctx.createScriptProcessor(AUDIO_BUFFER_SIZE,1,1);
+        console.log("setup voice callback!", source, processor, );
+        function doproc(ev) {
+            var ib=ev.inputBuffer;
+            var ob=ev.outputBuffer;
+            var indata=ib.getChannelData(0);
+            var outdata=ob.getChannelData(0);
+            outdata.set(indata);
+            var samples=new Float32Array(outdata.buffer);
+            var max=0;
+            for(var i=0;i<samples.length;i++) {
+                if(samples[i]>max)max=samples[i];
+            }
+            if(g_voicechat_enabled && max > 0.01) {
+                //                            console.log("outdata:",to_i(samples[0]*1000));
+                if(g_ctx.sampleRate==48000) {
+                    sendRPCVoice(outdata.buffer);                  
+                } else {
+                    console.log("need to resample!");
+                }
+  
+            }
+//            updateAudioLevelIcon(max);
+
+            if(analyser) {
+                var fbc = analyser.frequencyBinCount;
+                var freqs = new Uint8Array(fbc);
+                analyser.getByteFrequencyData(freqs);
+                //            console.log("freqs:",freqs);                        
+            }
+        }
+
+        var filter=g_ctx.createBiquadFilter();
+        filter.type="bandpass";
+        filter.frequency.value = (100 + 500) / 2; //いい(ひろい)ほう
+        filter.Q.value = 0.3;
+
+        // マイクレベル確認用
+        var analyser = g_ctx.createAnalyser();
+        analyser.smoothingTimeConstant = 0.4;
+        analyser.fftSize = AUDIO_BUFFER_SIZE;
+
+        // 音質には期待しないのでモノラルで飛ばす
+        var processor = g_ctx.createScriptProcessor(AUDIO_BUFFER_SIZE, 1, 1);
+        processor.onaudioprocess = doproc;
+        
+        // 自分のフィードバックいらない
+        var gain = g_ctx.createGain();
+        gain.gain.value = 0;
+
+        source.connect(filter);
+        filter.connect(processor);
+        processor.connect(analyser);
+        processor.connect(gain);
+        gain.connect(g_ctx.destination);
+
+    }
+
+    if(navigator.getUserMedia) {
+        navigator.getUserMedia(
+            {audio: true, echoCancellation:true, googEchoCancellation:true },
+            callback,
+            function(err) {
+                console.error(err);
+            }
+        );
+    } else if(navigator.mediaDevices.getUserMedia ){
+        navigator.mediaDevices.getUserMedia( {audio: true}).then(callback);
+    }
+}
+
+setupVoiceChat();
+
+
