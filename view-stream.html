@@ -148,7 +148,7 @@
       setInterval(function() {
           g_total_video_recv_bytes=mainplayer.source.totalBytesReceived;
           mainplayer.source.totalBytesReceived=0;
-          for(var i=0;i<7;i++) {
+          for(var i=0;i<miniplayer_num;i++) {
               g_total_video_recv_bytes += miniplayer[i].source.totalBytesReceived;
               miniplayer[i].source.totalBytesReceived=0;
           }
