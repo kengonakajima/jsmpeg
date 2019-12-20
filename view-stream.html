@@ -1,60 +1,50 @@
 <!DOCTYPE html>
+
 <html>
 <head>
-	<title>Oneframe</title>
+    <meta charset="utf-8">
 	<style type="text/css">
-		html, body {
+	  html, body, title {
+          color: lightsteelblue;
 			background-color: #111;
-			text-align: center;
+            font-family: 'Courier Prime', monospace;
 		}
 	</style>
-	
+	<title>Oneframe</title>
+
+    <link href="https://fonts.googleapis.com/css?family=Courier+Prime&display=swap" rel="stylesheet">
+    
 </head>
-<body>  
+<body>
   <h1>Oneframe</h1>
-  <canvas id="video-canvas"></canvas>
+  <canvas id="video-canvas" width=640 height=360></canvas>
+  <span id="overlay" style="position: absolute; color:gray; font-size:24px;"></span>
   <BR>
-  <table align="center">
-    <tr><td>
-  <button id="btn_w" onmouseup="btnUp('w')" onmousedown="btnDown('w')">W</button>
-<BR>
-  <button id="btn_a" onmouseup="btnUp('a')" onmousedown="btnDown('a')">A</button>
-  <button id="btn_s" onmouseup="btnUp('s')" onmousedown="btnDown('s')">S</button>
-  <button id="btn_d" onmouseup="btnUp('d')" onmousedown="btnDown('d')">D</button>
-      </td>
-      <td width=30></td>
-      <td>
-        <button id="btn_up" onmouseup="btnUp('Up')" onmousedown="btnDown('Up')">Up</button>
-        <BR>
-        <button id="btn_left" onmouseup="btnUp('Left')" onmousedown="btnDown('Left')">Left</button>
-        <button id="btn_down" onmouseup="btnUp('Down')" onmousedown="btnDown('Down')">Down</button>
-        <button id="btn_right" onmouseup="btnUp('Right')" onmousedown="btnDown('Right')">Right</button>
 
-
-      </td>
-      <td width=50></td>
-      <td>
-        <span id="status" style="color:#fff; font-size:20px;">status</span>
-        <br>
-      </td>
-      
-    </tr>
-  </table>
-
-  <canvas id="minivideo-canvas-0"></canvas>
-  <canvas id="minivideo-canvas-1"></canvas>
-  <canvas id="minivideo-canvas-2"></canvas>
-  <canvas id="minivideo-canvas-3"></canvas><BR>
-  <canvas id="minivideo-canvas-4"></canvas>
-  <canvas id="minivideo-canvas-5"></canvas>
-  <canvas id="minivideo-canvas-6"></canvas>
-  <canvas id="minivideo-canvas-7"></canvas>
+  <BR>
   
+  <canvas id="minivideo-canvas-0" width=160 height=90></canvas>
+  <span id="minioverlay-0" style="position: absolute; color:gray; font-size:8px;"></span>
+  <canvas id="minivideo-canvas-1" width=160 height=90></canvas>
+  <span id="minioverlay-1" style="position: absolute; color:gray; font-size:8px;"></span>  
+  <canvas id="minivideo-canvas-2" width=160 height=90></canvas>
+  <span id="minioverlay-2" style="position: absolute; color:gray; font-size:8px;"></span>  
+  <canvas id="minivideo-canvas-3" width=160 height=90></canvas>
+  <span id="minioverlay-3" style="position: absolute; color:gray; font-size:8px;"></span>  
+  <canvas id="minivideo-canvas-4" width=160 height=90></canvas>
+  <span id="minioverlay-4" style="position: absolute; color:gray; font-size:8px;"></span>  
+  <canvas id="minivideo-canvas-5" width=160 height=90></canvas>
+  <span id="minioverlay-5" style="position: absolute; color:gray; font-size:8px;"></span>  
+  <canvas id="minivideo-canvas-6" width=160 height=90></canvas>
+  <span id="minioverlay-6" style="position: absolute; color:gray; font-size:8px;"></span>  
+  <BR>
+  <span id="status" style="color:#fff; font-size:20px;">status</span>  
   
   <script type="text/javascript" src="hoge.js"></script>
   <script type="text/javascript" src="resampler.js"></script>  
     <script type="text/javascript" src="audioplayer.js"></script>  
 	<script type="text/javascript">
+      var is_ja = (navigator.language == "ja" );
       //      var isMobileSafari = navigator.userAgent.match(/(iPod|iPhone|iPad)/) && navigator.userAgent.match(/AppleWebKit/);
       var isMobileSafari=false;
       
@@ -65,44 +55,40 @@
       console.log("mpegplayer:",mainplayer);
       startAudioPlayer("ws://"+document.location.hostname+':8084/');
 
-      var testurl = "http://"+document.location.hostname+":8000/testsrc.ts";
-      var testplayer = new JSMpeg.Player(testurl, {canvas: maincanvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { testplayer.play(); } });
-
       var main_status_ws = createStatusCheckWS("ws://"+document.location.hostname+':8088/');
 
       // mini
       var minicanvas=[];
       var miniplayer=[];
-      var minitestplayer=[];
       var ministatuscheckws=[];
       for(var i=0;i<8;i++) {
           minicanvas[i] = document.getElementById('minivideo-canvas-'+i);      
 	      var miniurl = 'ws://'+document.location.hostname+':8086/';
 	      miniplayer[i] = new JSMpeg.Player(miniurl, {canvas: minicanvas[i], disableGl: isMobileSafari});
-          var minitesturl = "http://"+document.location.hostname+':8000/minitestsrc.ts';
-          //          var minitestplayer = new JSMpeg.Player(minitesturl, {canvas: minicanvas, disableGl: isMobileSafari, onVideoDecode: function(hoge,elt) { minitestplayer.play(); } });
-          minitestplayer[i] = new JSMpeg.Player(minitesturl, {canvas: minicanvas[i], disableGl: isMobileSafari, autoplay:true });
           var statusurl = 'ws://'+document.location.hostname+':8088/';
-          ministatuscheckws[i] = createStatusCheckWS(statusurl);
-          
+          ministatuscheckws[i] = createStatusCheckWS(statusurl);          
       }
-      
+
+      var waitcnt=0;
       setInterval( function() {
+          waitcnt++;
+          var overlay=document.getElementById("overlay");          
           var elt=main_status_ws.getElapsedTimeAfterLastVideo();
           if(elt < 400) {
-              testplayer.pause();
+              overlay.innerHTML="";
               mainplayer.play();
           } else {
-              testplayer.play();
+              showWaitText(maincanvas,overlay,0,waitcnt,true);
               mainplayer.pause();              
           }
-          for(var i=0;i<8;i++) {
+          for(var i=0;i<7;i++) {
+              var overlay = document.getElementById("minioverlay-"+i);
               var elt = ministatuscheckws[i].getElapsedTimeAfterLastVideo();
               if(elt<400) {
-                  minitestplayer[i].pause();
+                  overlay.innerHTML="";
                   miniplayer[i].play();
               } else {
-                  minitestplayer[i].play();
+                  showWaitText(minicanvas[i],overlay,i+1,waitcnt,false);
                   miniplayer[i].pause();                  
               }
           }

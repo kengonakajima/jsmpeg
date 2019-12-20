@@ -154,7 +154,6 @@ function sendRPCVoice(buf) {
     for(var i=0;i<f32a.length;i++) {
         if(f32a[i]>max)max=f32a[i];
     }
-    console.log("sendRPCVoice:",f32a.length,max);
     var i16a = new Int16Array(f32a.length);
     for(var i=0;i<f32a.length;i++) {
         i16a[i]=f32a[i]*32767;
@@ -167,7 +166,6 @@ function sendRPCVoice(buf) {
     for(var i=0;i<i16a.length;i++) {
         dv.setInt16(6+i*2,i16a[i],true);
     }
-    console.log("buftop:",i16a[0]);
     if(g_audio_ws && g_audio_ws.established) g_audio_ws.socket.send(ab);
 }
 
@@ -426,4 +424,19 @@ function setupVoiceChat() {
 
 setupVoiceChat();
 
+
+function showWaitText(tgtcanvas,overlay,chnum,waitcnt,longmessage) {
+    var rect = tgtcanvas.getBoundingClientRect();
+    overlay.style.left = ""+(rect.x+rect.width/8)+"px";
+    overlay.style.top = ""+(rect.y+rect.height/2)+"px";
+    var dots = ".";
+    for(var i=0;i<(waitcnt%4);i++) dots+=".";
+    var ch = "["+chnum+"ch]";
+    if(longmessage) {
+        overlay.innerHTML = is_ja ? ch+"次のサーバーを待機しています"+dots : ch+"Waiting for the next server"+dots;        
+    } else {
+        overlay.innerHTML = is_ja ? ch+"待機中"+dots : ch+"Waiting"+dots;                
+    }
+
+}
 
