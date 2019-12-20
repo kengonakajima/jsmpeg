@@ -18,7 +18,7 @@ cat \
 	src/webaudio.js \
 	src/wasm-module.js \
     jsmpeg.wasm.inline.inc.js \
-	> hoge.js
+	> jsmpegcat.js
 
 
 
