@@ -82,6 +82,7 @@ function parseRecvbuf() {
             console.log("audiodatareceiver.write: room not enough");
             g_samples_used=0;
         }
+        var max=0;
         for(var i=0;i<input_samplenum;i++) {
             var ind=6+i*2;
             var u16 = get_u16(g_recvbuf,ind);
@@ -90,18 +91,26 @@ function parseRecvbuf() {
             g_samples_r[g_samples_used+i*2] = mono;
             g_samples_l[g_samples_used+i*2] = mono;
             g_samples_r[g_samples_used+i*2+1] = mono;
-            g_samples_l[g_samples_used+i*2+1] = mono;            
+            g_samples_l[g_samples_used+i*2+1] = mono;
+            if(mono>max)max=mono;
         }
         g_samples_used+=output_samplenum;
     } else if(funcid==FUNCID_ECHO) {
-        var sender_time = get_u32(g_recvbuf,6);
-        var nowms=parseInt(performance.now());
-        var dtms=nowms-sender_time;
-        g_lastPing=dtms;
-        updateStatus();
+        var cli_id = get_u32(g_recvbuf,6);
+        if(cli_id == g_clientId) {
+            var sender_time = get_u32(g_recvbuf,6+4);
+            var nowms=parseInt(performance.now());
+            var dtms=nowms-sender_time;
+            g_lastPing=dtms;
+            var span=document.getElementById("ping");
+            span.innerHTML= "ping:"+dtms+"ms";
+            if(dtms<50) span.style.color="#0f0";
+            else if(dtms<150) span.style.color="#ff0";
+            else span.style.color="#f00";
+        }
     } else if(funcid==FUNCID_INIT) {
         g_clientId=get_u32(g_recvbuf,6);
-        console.log("FUNCID_INIT: g_clientId:",g_clientId);
+        console.log("funcid_init: g_clientId:",g_clientId);
     }
     
     shiftRecvbuf(6+payload_len);
@@ -189,9 +198,8 @@ g_sn.onaudioprocess = function(audioProcessingEvent) {
             out1[i] = g_samples_l[i];
         }
         shiftSamples(inputBuffer.length);
-        if(g_samples_used > 8192) {
-            console.log("buffer shift more:", g_samples_used, inputBuffer.length);
-            shiftSamples(4096);
+        if(g_samples_used > 2048) {
+            shiftSamples(1024);
         }
     } else {
         for (var i = 0; i < inputBuffer.length; i++) {
@@ -267,38 +275,14 @@ function keyToGLFWIntKey(key,code) {
 }
 // input events
 
-var g_ofsX=0, g_ofsY=0;
-var g_mouseButtonDown=false;
-var g_lastClickAt=0;
-var g_clickCount=0;
 var g_lastPing=0;
 var g_total_audio_recv=0;
-var g_network_stats="";
-var g_last_decode_time = 0;
-var g_touchCount=0;
 
-function updateStatus() {
-    var e=document.getElementById("status");
-    e.innerHTML = "mouseDown:"+g_mouseButtonDown + " ofsX:"+g_ofsX + " ofsY:"+g_ofsY + " decode:" + g_last_decode_time + "<BR>" +
-        "click:" + g_clickCount + " touch:" + g_touchCount + " ping:" + g_lastPing + "ms<BR>" +
-        g_network_stats;
 
-}
-setInterval(function() {
-    if(g_mpegplayer) {
-        
-        g_network_stats = "audioRecvB:" + g_total_audio_recv + " videoRecvB:" + g_mpegplayer.source.totalBytesReceived;
-        g_mpegplayer.source.totalBytesReceived=0;
-        g_total_audio_recv=0;
-    }                     
-},1000);
 
 
 function notifyEventAudioPlayer(e) {
     if(e.type=="click") {
-        g_clickCount++;
-        g_lastClickAt=parseInt(performance.now());
-        updateStatus();
         sendRPCInt(FUNCID_CLICK_EVENT, [g_clientId,e.offsetX, e.offsetY] );
     } else if(e.type=="keydown") {
         var k=keyToGLFWIntKey(e.key,e.code);
@@ -308,20 +292,11 @@ function notifyEventAudioPlayer(e) {
         sendRPCInt(FUNCID_KEYUP_EVENT, [g_clientId,k]);        
     } else if(e.type=="mousemove") {
         sendRPCInt(FUNCID_MOUSEMOVE_EVENT,[g_clientId,e.offsetX,e.offsetY])
-        g_ofsX=e.offsetX;
-        g_ofsY=e.offsetY;
-        updateStatus();
     } else if(e.type=="mouseup") {
-        g_mouseButtonDown=false;
-        updateStatus();        
         sendRPCInt(FUNCID_MOUSEUP_EVENT,[g_clientId,e.offsetX,e.offsetY])        
     } else if(e.type=="mousedown") {
-        g_mouseButtonDown=true;
-        updateStatus();        
         sendRPCInt(FUNCID_MOUSEDOWN_EVENT,[g_clientId,e.offsetX,e.offsetY])
     } else if(e.type=="touchstart") {
-        g_touchCount++;
-        updateStatus();
         sendRPCInt(FUNCID_TOUCHSTART_EVENT, [g_clientId,e.layerX, e.layerY] );
     } else if(e.type=="touchend") {
         sendRPCInt(FUNCID_TOUCHEND_EVENT, [g_clientId,e.layerX, e.layerY] );
@@ -444,14 +419,16 @@ function onClickMicIcon(){
     }
 }
 function updateAudioLevelIcon(level) {
-    var ind;
-    if(level>0.4){
-        ind=2;
-    } else if( level>0.1) {
-        ind=1;
-    } else {
-        ind=0;
+    if(g_voicechat_enabled) {
+        var ind;
+        if(level>0.4){
+            ind=2;
+        } else if( level>0.1) {
+            ind=1;
+        } else {
+            ind=0;
+        }
+        var mic = document.getElementById("mic");
+        mic.src="images/active"+ind+".png";
     }
-    var mic = document.getElementById("mic");
-    mic.src="images/active"+ind+".png";
 }
